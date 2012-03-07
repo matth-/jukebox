@@ -18,7 +18,7 @@ require 'encode.rb'
 require 'db.rb'
 require 'json_api.rb'
 require 'upload.rb'
-require 'basic_api.rb'
+require 'rest_api.rb'
 require 'web_debug.rb'
 
 raise("Not support ruby version < 1.9") if(RUBY_VERSION < "1.9.0");
@@ -54,8 +54,8 @@ Thread.new() {
 
 
 # Create HTTP server
-json   = JsonManager.new(channelList, library, config[:upload.to_s], config[:encode.to_s]);
-basic  = BasicApi.new(channelList);
+json   = JsonManager.new(channelList, library , config[:upload.to_s], config[:encode.to_s]);
+rest   = RestApi.new(channelList);
 upload = UploadManager.new(config[:upload.to_s]);
 debug  = DebugPage.new();
 main   = HttpNodeMapping.new("html");
@@ -68,8 +68,9 @@ main.addAuth() { |s, req, user, pass|
   nil;
 }
 
+
 root = HttpRootNode.new({ "/api/json" => json,
-                          "/api"      => basic,
+                          "/api"      => rest,
                           "/upload"   => upload,
                           "/"         => main,
                           "/stream"   => stream});
