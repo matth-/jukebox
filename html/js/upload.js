@@ -74,8 +74,10 @@ var uploadTab = Class.create(Tab, {
     deletionResponse : function(ret, message){
         if("success" == ret){
             if( null != this.lastSendingDeletionIdentifier ){
+
                 /* Delete html part*/
                 $('upload_line_' + escape(this.lastSendingDeletionIdentifier)).remove();
+                showNotification(2, "song '" + this.lastSendingDeletionIdentifier + "'sucessfully deleted");
 
                 /* delete unmodified reference entry*/
                 var newUploaddedFilelist = new Array();
@@ -123,6 +125,21 @@ var uploadTab = Class.create(Tab, {
     updateResponse : function(ret, message){
         if("success" == ret){
             showNotification(1,message);
+
+            /* delete all modified styles */
+            $('upload_line_' + escape(this.lastSendingUpdateIdentifier)).select('[class="modified"]').each(function(e){
+                    e.removeClassName("modified");
+            });
+
+            /* hide update */
+            $('upload_line_' + escape(this.lastSendingUpdateIdentifier)).select('[name="update"]').each(function(e){
+                    e.hide();
+            });
+
+            /* Show validate */
+            $('upload_line_' + escape(this.lastSendingUpdateIdentifier)).select('[name="validate"]').each(function(e){
+                    e.show();
+            });
         } else if( "error" == ret ) {
             showNotification(4,message);
         }
@@ -205,35 +222,52 @@ var uploadTab = Class.create(Tab, {
         html_uploaded_files += obj.filename;
         html_uploaded_files += "</td>";
         html_uploaded_files += "<td>";
-        html_uploaded_files += obj.artist;
+        if(obj.artist)
+            html_uploaded_files += obj.artist;
         html_uploaded_files += "</td>";
         html_uploaded_files += "<td>";
-        html_uploaded_files += obj.album;
+        if(obj.album)
+            html_uploaded_files += obj.album;
         html_uploaded_files += "</td>";
         html_uploaded_files += "<td>";
-        html_uploaded_files += obj.title;
+        if(obj.title)
+            html_uploaded_files += obj.title;
         html_uploaded_files += "</td>";
         html_uploaded_files += "<td>";
         html_uploaded_files += obj.year;
         html_uploaded_files += "</td>";
         html_uploaded_files += "<td>";
-        html_uploaded_files += obj.track;
+        if( obj.track.toString().indexOf("/") != -1 )
+            html_uploaded_files += obj.track.split("/")[0];
+        else
+            html_uploaded_files += obj.track;
         html_uploaded_files += "</td>";
         html_uploaded_files += "<td>";
-        html_uploaded_files += obj.genre;
+        if( obj.track.toString().indexOf("/") != -1 )
+            html_uploaded_files += obj.track.split("/")[1];
+        else
+            html_uploaded_files += 0;
         html_uploaded_files += "</td>";
-        html_uploaded_files += "<td class='static'>";
-        html_uploaded_files += "<a href='javascript:void(0);'";
+
+        html_uploaded_files += "<td>";
+        if( genres.length >= obj.genre ) {
+            html_uploaded_files += genres[obj.genre];
+        } else {
+            html_uploaded_files += genres[genres.length - 1];
+        }
+        html_uploaded_files += "</td>";
+        html_uploaded_files += "<td class='static actions'>";
+        html_uploaded_files += "<div name='delete'><a href='javascript:void(0);'";
         html_uploaded_files += "onclick='tabs.getFirstTabByClassName(\"UploadTab\").deleteUploadedSong(\"" ;
-        html_uploaded_files += escape(obj.filename) + "\");return false;'>X</a>";
+        html_uploaded_files += escape(obj.filename) + "\");return false;'>X</a></div>";
 
-        html_uploaded_files += "<a href='javascript:void(0);'"
+        html_uploaded_files += "<div name='update' style='display:none;'><a href='javascript:void(0);'"
         html_uploaded_files += "onclick='tabs.getFirstTabByClassName(\"UploadTab\").updateUploadedSong(\"";
-        html_uploaded_files += escape(obj.filename) + "\");return false;'>&nbsp;Update&nbsp;</a>";        
+        html_uploaded_files += escape(obj.filename) + "\");return false;'>&nbsp;Update&nbsp;</a></div>";        
 
-        html_uploaded_files += "<a href='javascript:void(0);'"
+        html_uploaded_files += "<div name='validate'><a href='javascript:void(0);'"
         html_uploaded_files += "onclick='tabs.getFirstTabByClassName(\"UploadTab\").validateUploadedSong(\"";
-        html_uploaded_files += escape(obj.filename) + "\");return false;'>&nbsp;Validate&nbsp;</a>";        
+        html_uploaded_files += escape(obj.filename) + "\");return false;'>&nbsp;Validate&nbsp;</a></div>";        
         html_uploaded_files += "</td>";
         html_uploaded_files += "</tr>";
         return html_uploaded_files;
@@ -261,6 +295,7 @@ var uploadTab = Class.create(Tab, {
                 html_uploaded_files += '<th id="title">Title</th>';
                 html_uploaded_files += '<th id="year">Year</th>';
                 html_uploaded_files += '<th id="track">Track</th>';
+                html_uploaded_files += '<th id="trackNb">TrackNb</th>';
                 html_uploaded_files += '<th id="genre">Genre</th>';
                 html_uploaded_files += '<th id="actions">Actions</th>';
                 html_uploaded_files += '</tr></thead>';
@@ -271,6 +306,7 @@ var uploadTab = Class.create(Tab, {
                 html_uploaded_files += '<td id="title">Title</td>';
                 html_uploaded_files += '<td id="year">Year</td>';
                 html_uploaded_files += '<td id="track">Track</td>';
+                html_uploaded_files += '<td id="trackNb">TrackNb</td>';
                 html_uploaded_files += '<td id="genre">Genre</td>';
                 html_uploaded_files += '<td id="actions">Actions</td>';
                 html_uploaded_files += '</tr></tfoot>';
@@ -298,6 +334,8 @@ var uploadTab = Class.create(Tab, {
                 obj = new musicFieldEditor("year");
                 TableKit.Editable.addCellEditor(obj);
                 obj = new musicFieldEditor("track");
+                TableKit.Editable.addCellEditor(obj);
+                obj = new musicFieldEditor("trackNb");
                 TableKit.Editable.addCellEditor(obj);
                 obj = new musicFieldEditor("genre");
                 TableKit.Editable.addCellEditor(obj);
@@ -332,8 +370,8 @@ var uploadTab = Class.create(Tab, {
             // Add files to references
             for( var i=0; i<newLines.length; ++i){
                 $('uploaded_filelist_' + this.tableId).down('tbody').insert( this.getUploadedFileHtml(newLines[i]) );
-                this.uploadedFiles.push(newLines[i]);
-                this.uploadedFilesEdition.push(newLines[i]);
+                this.uploadedFiles.push(JSON.parse(JSON.stringify(newLines[i])));
+                this.uploadedFilesEdition.push(JSON.parse(JSON.stringify(newLines[i])));
                 $$( '.qq-upload-success').each( function(element){
                     if(element.down('.qq-upload-file').innerHTML == newLines[i].filename){
                         element.remove();
@@ -349,14 +387,13 @@ var uploadTab = Class.create(Tab, {
                 this.tableKit = new TableKit( 'uploaded_filelist_' + this.tableId, { });
             }
         }
-        if(null == this.uploadedFiles){
+        if(null == this.uploadedFiles|| this.uploadedFiles.length == 0 ){
             // trick used to clone
             this.uploadedFiles = JSON.parse(JSON.stringify(uploaded_files));
         }
-        if( null == this.uploadedFilesEdition ) {
+        if( null == this.uploadedFilesEdition || this.uploadedFilesEdition.length == 0 ) {
             this.uploadedFilesEdition = JSON.parse(JSON.stringify(uploaded_files));
         }
-
     },
 
     getUploadedFiles: function(){
@@ -369,7 +406,10 @@ var uploadTab = Class.create(Tab, {
     clear: function(){
         clearTimeout(this.refresher);
         /* Don't know if it works */
-        delete this.uploader;
+        if(tabs.getFirstTabByClassName("UploadTab").uploader._handler._queue.length > 0)
+            showNotification(1, "All current uploads canceled.");
+        tabs.getFirstTabByClassName("UploadTab").uploader._handler.cancelAll();
+
         this.refresher = null;
     },
 
@@ -408,7 +448,4 @@ var uploadTab = Class.create(Tab, {
         // Send a json query to obtain the list off uploaded files
         this.getUploadedFiles();
     }
-
-    
-
 });

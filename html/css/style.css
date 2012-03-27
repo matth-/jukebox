@@ -140,6 +140,7 @@ div#player_controls
 	background-color: #DEDEDE;
 	width: 100%;
 	height: 45px;
+    overflow:hidden;
 }
 
 p#player_song_title
@@ -253,7 +254,7 @@ div.play_queue_handle
 }
 
 
-span.play_queue_delete, span.play_queue_move_top, span.play_queue_move_bottom, span.add_to_play_queue_bottom, span.add_to_play_queue_top {
+span.play_queue_delete, span.play_queue_shuffle, span.play_queue_move_top, span.play_queue_move_bottom, span.add_to_play_queue_bottom, span.add_to_play_queue_top, span.add_to_play_queue_rand, span.nb_listening_users {
 /*	display: block;
 	float: right;*/
 	width: 10px;
@@ -264,6 +265,23 @@ span.play_queue_delete, span.play_queue_move_top, span.play_queue_move_bottom, s
 	background-color: black;
 }
 
+span.count_user_listening {
+	width: 10px;
+	height: 10px;
+    position: absolute;
+	top: 2px;
+	left: 85px;
+    font-size:10px;
+}
+
+
+span.nb_listening_users {
+    left: 80px;
+    top:3px;
+    background: url("../images/user.png") no-repeat left top;
+}
+
+
 span.add_to_play_queue_top {
     right: 20px;
     background: url("../images/icons/add_to_play_queue_top.png") no-repeat left top;
@@ -273,9 +291,18 @@ span.add_to_play_queue_bottom {
     background: url("../images/icons/add_to_play_queue_bottom.png") no-repeat left top;
 }
 
+span.add_to_play_queue_rand {
+    right: 35px;
+    background: url("../images/icons/add_to_play_queue_randomly.png") no-repeat left top;
+}
 
 span.play_queue_delete {
     background: url("../images/icons/play_queue_delete.png") no-repeat left top;
+}
+
+span.play_queue_shuffle {
+    right: 20px;
+    background: url("../images/icons/play_queue_shuffle.png") no-repeat left top;
 }
 
 span.play_queue_move_top {

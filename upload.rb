@@ -17,8 +17,10 @@ class UploadManager < HttpNode
     @dst_folder = "uploads/"
 
     # Initialize uploder from config file if exists
-    @max_file_size_in_bytes = conf['max_file_size_in_bytes'] if( conf && conf['max_file_size_in_bytes'] )
-    @allowed_extensions = conf['allowed_extensions'] if( conf && conf['allowed_extensions'] )
+    @max_request_size_in_bytes = conf['max_request_size_in_bytes'] if( conf && conf['max_request_size_in_bytes'] );
+    @max_file_size_in_bytes = conf['max_file_size_in_bytes'] if( conf && conf['max_file_size_in_bytes'] );
+    @allowed_extensions = conf['allowed_extensions'] if( conf && conf['allowed_extensions'] );
+    @dst_folder = conf['dst_folder'] if( conf && conf['dst_folder'] );
   end
 
   def on_request(s, req)
@@ -45,15 +47,17 @@ class UploadManager < HttpNode
     # Extensions tests before uploading the file
     fileExtentionValidated = false;
     @allowed_extensions.each { |ext|
-      if( ext == File.extname(URI.unescape(req.options['X-File-Name'])) )
+      if( ext == File.extname(URI.unescape(req.options['X-File-Name'])).downcase() )
         fileExtentionValidated = true;
       end
     }
     if( not fileExtentionValidated )
-      error("Unauthorized file extension "+File.extname(URI.unescape(req.options['X-File-Name']))+". Authorized extensions are #{@allowed_extensions}");
+      allowed_extensions_str = @allowed_extensions.map{ |i|  "'" + i.to_s + "'" }.join(",")
+      
+      error("Unauthorized file extension "+File.extname(URI.unescape(req.options['X-File-Name']))+". Authorized extensions are #{allowed_extensions_str}");
       rep = HttpResponse.new(req.proto, 200, "Error",
                              "Content-Type" => "application/json");
-      res = '{ error: "Unauthorized file extension \'' + URI.unescape(File.extname(req.options['X-File-Name'])) + '\'. Authorized extensions are #{@allowed_extensions}", success: false}';
+      res = '{ error: "Unauthorized file extension \'' + URI.unescape(File.extname(req.options['X-File-Name'])) + '\'. Authorized extensions are ' + allowed_extensions_str +'", success: false}';
       rep.setData(res);
       s.write(rep.to_s);
       return;
@@ -225,6 +229,7 @@ class UploadManager < HttpNode
   end
 
   def self.validateUploadedFiles(source_dir,upload_dir, user, req, resp)
+    error_message = nil;
     file_path= File.join(upload_dir, user, Iconv.conv('ISO-8859-1', 'utf-8', req["file_name"]));
 
     begin
@@ -297,7 +302,16 @@ class UploadManager < HttpNode
     end
     if( File.file?(file_path)  )
       begin
-        title = "#{id3info.artist} - #{id3info.album} - #{id3info.title}.mp3";
+        if( id3info.track.include?("/") ) 
+          track = id3info.track.split("/")[0];
+        else
+          track = id3info.track;
+        end
+
+        title = "#{id3info.artist} - #{id3info.album} - #{track} - #{id3info.title}.mp3";
+        if(title.length > 255 )
+          title = "#{id3info.title}.mp3"
+        end
         album_folder = "#{id3info.date} - #{id3info.album}";
         dst_folder = File.join(source_dir, id3info.artist);
       rescue Exception=>e

@@ -21,6 +21,160 @@ var lastCurrentSongElapsedTimeUpdate = null;
 
 var tabs = new tabs('tab');
 
+var genres = [
+"Blues",
+"Classic Rock",
+"Country",
+"Dance",
+"Disco",
+"Funk",
+"Grunge",
+"Hip-Hop",
+"Jazz",
+"Metal",
+"New Age",
+"Oldies",
+"Other",
+"Pop",
+"R&B",
+"Rap",
+"Reggae",
+"Rock",
+"Techno",
+"Industrial",
+"Alternative",
+"Ska",
+"Death Metal",
+"Pranks",
+"Soundtrack",
+"Euro-Techno",
+"Ambient",
+"Trip-Hop",
+"Vocal",
+"Jazz+Funk",
+"Fusion",
+"Trance",
+"Classical",
+"Instrumental",
+"Acid",
+"House",
+"Game",
+"Sound Clip",
+"Gospel",
+"Noise",
+"Alternative Rock",
+"Bass",
+"Soul",
+"Punk",
+"Space",
+"Meditative",
+"Instrumental Pop",
+"Instrumental Rock",
+"Ethnic",
+"Gothic",
+"Darkwave",
+"Techno-Industrial",
+"Electronic",
+"Pop-Folk",
+"Eurodance",
+"Dream",
+"Southern Rock",
+"Comedy",
+"Cult",
+"Gangsta",
+"Top 40",
+"Christian Rap",
+"Pop/Funk",
+"Jungle",
+"Native US",
+"Cabaret",
+"New Wave",
+"Psychadelic",
+"Rave",
+"Showtunes",
+"Trailer",
+"Lo-Fi",
+"Tribal",
+"Acid Punk",
+"Acid Jazz",
+"Polka",
+"Retro",
+"Musical",
+"Rock & Roll",
+"Hard Rock",
+"Folk",
+"Folk-Rock",
+"National Folk",
+"Swing",
+"Fast Fusion",
+"Bebob",
+"Latin",
+"Revival",
+"Celtic",
+"Bluegrass",
+"Avantgarde",
+"Gothic Rock",
+"Progressive Rock",
+"Psychedelic Rock",
+"Symphonic Rock",
+"Slow Rock",
+"Big Band",
+"Chorus",
+"Easy Listening",
+"Acoustic",
+"Humour",
+"Speech",
+"Chanson",
+"Opera",
+"Chamber Music",
+"Sonata",
+"Symphony",
+"Booty Bass",
+"Primus",
+"Porn Groove",
+"Satire",
+"Slow Jam",
+"Club",
+"Tango",
+"Samba",
+"Folklore",
+"Ballad",
+"Power Ballad",
+"Rhythmic Soul",
+"Freestyle",
+"Duet",
+"Punk Rock",
+"Drum Solo",
+"Acapella",
+"Euro-House",
+"Dance Hall",
+"Goa",
+"Drum & Bass",
+"Club - House",
+"Hardcore",
+"Terror",
+"Indie",
+"BritPop",
+"Negerpunk",
+"Polsk Punk",
+"Beat",
+"Christian Gangsta Rap",
+"Heavy Metal",
+"Black Metal",
+"Crossover",
+"Contemporary Christian",
+"Christian Rock",
+"Merengue",
+"Salsa",
+"Thrash Metal",
+"Anime",
+"JPop",
+"Synthpop",
+"Unknown"
+];
+
+
+
 function jsonPrettyPrint (input) {
     var json_hr = JSON.stringify(input, null, "\t");
     json_hr = json_hr.replace(/\n/g, '<br />');
@@ -193,6 +347,11 @@ function updateJukebox ( update_timestamp ) {
             }
             
             if (json.channel_infos != null) {
+                $$('span.count_user_listening').each(function(e){ 
+                    content = '';
+                    content += json.channel_infos.listener_count.toString();
+                    e.update(content);
+                });
                 /*var select = $('channel_select');
                   channel = $('channel_select').value;
                   select.update('');
@@ -354,6 +513,14 @@ function PlayQueueMove(mid, play_queue_index, new_play_queue_index) {
     updateJukebox();
 }
 
+function PlayQueueShuffle() {
+    var action = new Object();
+    action.name = "shuffle_play_queue";
+    query.action = action;
+    updateJukebox();
+}
+
+
 function PlayQueueDelete(mid, play_queue_index) {
     if(undefined == mid || null == mid || undefined == play_queue_index || null == play_queue_index){
         /* Nothing is passed as argument we want to clear all the playlist */
@@ -397,6 +564,9 @@ function DisplayPlayQueue () {
     var html = '';
     html += '<ul>';
     html += '<li id="play_queue_li_first" class="droppable">Play queue';
+    html += '<div><span class="nb_listening_users"></span>';
+    html += '<span class="count_user_listening">0</span></div>';
+    html += '<a href="javascript:void(0)" onclick="PlayQueueShuffle();"><span class="play_queue_shuffle"></span></a>';
     html += '<a href="javascript:void(0)" onclick="PlayQueueDelete();"><span class="play_queue_delete"></span></a>';
     html += '</li>';
 

@@ -17,8 +17,8 @@ class JsonManager < HttpNode
   def initialize(list, library, conf_upload, conf_encode)
     @list     = list;
     @library  = library;
-    @upload_dir = conf_upload["dst_folder"];
-    @source_dir = conf_encode["source_dir"];
+    @upload_dir = conf_upload  && conf_upload["dst_folder"] || "uploads";
+    @source_dir = conf_encode  && conf_encode["source_dir"] || "../../musik/sorted/";
     super();
   end
 
@@ -83,7 +83,7 @@ class JsonManager < HttpNode
         # refresh
         resp[:channel_infos] = ch.to_client();
         resp[:current_song]  = ch.getCurrentSongInfo();
-        if(timestamp <= ch.timestamp)
+        if(timestamp <= ch.queue.timestamp)
           resp[:play_queue] = ch.queue.to_client(@library);
         end
       rescue JSON::ParserError => e
@@ -106,6 +106,8 @@ class JsonManager < HttpNode
       ch.previous();
     when "add_to_play_queue"
       ch.queue.add(req["play_queue_index"], req["mid"])
+    when "shuffle_play_queue"
+      ch.queue.shuffle();
     when "add_search_to_play_queue" 
       result = @library.secure_request("mid",
                                        CGI::unescape(req["search_value"]),
@@ -116,11 +118,13 @@ class JsonManager < HttpNode
                                        req["first_result"],
                                        req["result_count"]);
       if(req["play_queue_position"]  == "head")
-        i = 0;
-      else
-        i = nil;
+        ch.queue.add(0, result);
+      elsif( req["play_queue_position"]  == "tail" )
+        ch.queue.add(nil, result);
+      else # randomly
+         ch.queue.add_randomly(result);
       end
-      ch.queue.add(i, result);
+
     when "remove_from_play_queue"
       ch.queue.del(req["play_queue_index"]);
     when "move_in_play_queue"
